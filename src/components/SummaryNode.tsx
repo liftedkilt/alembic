@@ -17,6 +17,7 @@ export interface SummaryBranch {
   loading?: boolean;
   error?: string | null;
   onExpand?: () => void;
+  onRetry?: () => void;
   children: SummaryNodeData[];
 }
 
@@ -91,7 +92,19 @@ export function SummaryNode({ node, depth = 0 }: Props) {
                   ))}
                 </div>
               )}
-              {node.error && <div className="text-sm text-destructive">{node.error}</div>}
+              {node.error && (
+                <div className="text-sm">
+                  <div className="text-destructive">{node.error}</div>
+                  {node.onRetry && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); node.onRetry!(); }}
+                      className="mt-2 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                    >
+                      Retry
+                    </button>
+                  )}
+                </div>
+              )}
               {!node.loading && !node.error && node.children.map((child, i) => (
                 <SummaryNode key={i} node={child} depth={depth + 1} />
               ))}

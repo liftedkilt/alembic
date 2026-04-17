@@ -32,8 +32,11 @@ export async function testConnection(): Promise<{ ok: boolean; output?: string; 
   const { buildProviderFromSettings } = await import('@/llm/factory');
   try {
     const p = await buildProviderFromSettings();
-    const output = await p.generate('Respond with the single word: alembic.');
-    return { ok: true, output };
+    const result = await Promise.race<Promise<string> | Promise<never>>([
+      p.generate('Respond with the single word: alembic.'),
+      new Promise<never>((_, rej) => setTimeout(() => rej(new Error('Timed out after 15s — check base URL and network')), 15_000)),
+    ]);
+    return { ok: true, output: result };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'failed' };
   }
