@@ -3,10 +3,16 @@ export interface ParsedChapter {
   paragraphs: string[];
 }
 
+export interface ParsedImage {
+  filename: string;
+  bytes: Buffer;
+}
+
 export interface ParsedBook {
   title: string;
   author?: string;
   coverBytes?: Buffer;
+  images?: ParsedImage[];
   chapters: ParsedChapter[];
 }
 

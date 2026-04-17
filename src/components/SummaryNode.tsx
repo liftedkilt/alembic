@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { stripInlineMarkdown } from '@/lib/text';
@@ -22,24 +22,13 @@ export interface SummaryBranch {
   children: SummaryNodeData[];
 }
 
-export type SummaryNodeData = SummaryBranch | LeafText;
-
-interface OpenRegistry {
-  inc: (depth: number) => void;
-  dec: (depth: number) => void;
+export interface SummarySection {
+  kind: 'section';
+  label: string;
+  children: SummaryNodeData[];
 }
 
-const OpenRegistryContext = createContext<OpenRegistry | null>(null);
-
-export function OpenRegistryProvider({
-  registry,
-  children,
-}: {
-  registry: OpenRegistry;
-  children: React.ReactNode;
-}) {
-  return <OpenRegistryContext.Provider value={registry}>{children}</OpenRegistryContext.Provider>;
-}
+export type SummaryNodeData = SummaryBranch | LeafText | SummarySection;
 
 type Props = {
   node: SummaryNodeData;
@@ -49,14 +38,6 @@ type Props = {
 
 export function SummaryNode({ node, depth = 0, initiallyOpen = false }: Props) {
   const [open, setOpen] = useState(initiallyOpen);
-  const registry = useContext(OpenRegistryContext);
-
-  useEffect(() => {
-    if (node.kind !== 'branch') return;
-    if (!open) return;
-    registry?.inc(depth);
-    return () => registry?.dec(depth);
-  }, [open, depth, node.kind, registry]);
 
   const handleToggle = useCallback(() => {
     if (node.kind !== 'branch') return;
@@ -67,15 +48,32 @@ export function SummaryNode({ node, depth = 0, initiallyOpen = false }: Props) {
 
   if (node.kind === 'leaf') {
     return (
-      <motion.p
+      <motion.div
         layout="position"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        className="font-serif text-[1.05rem] leading-[1.75] text-foreground"
       >
-        {node.text}
-      </motion.p>
+        <LeafContent text={node.text} />
+      </motion.div>
+    );
+  }
+
+  if (node.kind === 'section') {
+    return (
+      <motion.div layout="position">
+        <motion.div
+          layout="position"
+          className="mt-12 mb-5 text-center text-[0.7rem] font-sans uppercase tracking-[0.28em] text-muted-foreground"
+        >
+          {node.label}
+        </motion.div>
+        <div className="space-y-5">
+          {node.children.map((child, i) => (
+            <SummaryNode key={i} node={child} depth={depth + 1} />
+          ))}
+        </div>
+      </motion.div>
     );
   }
 
@@ -184,4 +182,20 @@ export function SummaryNode({ node, depth = 0, initiallyOpen = false }: Props) {
       </AnimatePresence>
     </motion.div>
   );
+}
+
+function LeafContent({ text }: { text: string }) {
+  const match = text.trim().match(/^\[\[IMG:(.+?)(?:\|(.*))?\]\]$/);
+  if (match) {
+    const src = match[1];
+    const alt = match[2] ?? '';
+    return (
+      <figure className="my-2">
+        { }
+        <img src={src} alt={alt} className="mx-auto max-w-full rounded-sm" />
+        {alt && <figcaption className="mt-2 text-center text-xs font-sans text-muted-foreground">{alt}</figcaption>}
+      </figure>
+    );
+  }
+  return <p className="font-serif text-[1.05rem] leading-[1.75] text-foreground">{text}</p>;
 }

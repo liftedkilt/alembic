@@ -1,21 +1,19 @@
 'use client';
 
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
-import {
-  OpenRegistryProvider,
-  SummaryNode,
-  SummaryNodeData,
-} from '@/components/SummaryNode';
-import { ZoomIndicator } from '@/components/ZoomIndicator';
+import { SummaryNode, SummaryNodeData } from '@/components/SummaryNode';
 import { RetryBanner } from '@/components/RetryBanner';
+import { isTrivialParagraph } from '@/lib/triviality';
 
 type ChapterLite = {
   id: string;
   index: number;
   title: string;
   summary: string | null;
+  isTrivial: boolean;
   paragraphSummariesStatus: string;
+  paragraphs?: { id: string; index: number; summary: string | null; fullText: string }[];
 };
 
 type ApiParagraphs = {
@@ -39,30 +37,6 @@ export function ReaderClient({
   const [chapterState, setChapterState] = useState<
     Record<string, { loading: boolean; error: string | null; paragraphs?: ApiParagraphs['paragraphs'] }>
   >({});
-  const [openCounts, setOpenCounts] = useState<number[]>([0, 0, 0, 0]);
-
-  const registry = useMemo(
-    () => ({
-      inc: (d: number) =>
-        setOpenCounts((c) => {
-          const n = [...c];
-          n[d] = (n[d] ?? 0) + 1;
-          return n;
-        }),
-      dec: (d: number) =>
-        setOpenCounts((c) => {
-          const n = [...c];
-          n[d] = Math.max(0, (n[d] ?? 0) - 1);
-          return n;
-        }),
-    }),
-    [],
-  );
-
-  const visibleDepth = openCounts.reduce(
-    (max, count, i) => (count > 0 ? i + 1 : max),
-    0,
-  );
 
   const fetchChapter = useCallback(async (chId: string) => {
     let alreadyFetching = false;
@@ -107,35 +81,50 @@ export function ReaderClient({
     [fetchChapter],
   );
 
+  const paragraphNode = (p: { summary: string | null; fullText: string }): SummaryNodeData => {
+    if (!p.summary || p.summary === p.fullText || isTrivialParagraph(p.fullText)) {
+      return { kind: 'leaf', text: p.fullText };
+    }
+    return {
+      kind: 'branch',
+      heading: 'paragraph',
+      summary: p.summary,
+      children: [{ kind: 'leaf', text: p.fullText }],
+    };
+  };
+
+  const chapterNode = (ch: ChapterLite): SummaryNodeData => {
+    if (ch.isTrivial) {
+      const paragraphs = ch.paragraphs ?? [];
+      return {
+        kind: 'section',
+        label: `Chapter ${ch.index + 1}`,
+        children: paragraphs.map((p) => paragraphNode(p)),
+      };
+    }
+    const state = chapterState[ch.id];
+    return {
+      kind: 'branch',
+      heading: 'chapter',
+      label: `Chapter ${ch.index + 1}`,
+      summary: ch.summary,
+      loading: state?.loading,
+      error: state?.error,
+      onExpand: () => fetchChapter(ch.id),
+      onRetry: () => retryChapter(ch.id),
+      children: (state?.paragraphs ?? []).map<SummaryNodeData>(paragraphNode),
+    };
+  };
+
   const tree: SummaryNodeData = {
     kind: 'branch',
     heading: 'book',
     summary: book.bookSummary,
-    children: book.chapters.map((ch) => {
-      const state = chapterState[ch.id];
-      return {
-        kind: 'branch',
-        heading: 'chapter',
-        label: `Chapter ${ch.index + 1}`,
-        summary: ch.summary,
-        loading: state?.loading,
-        error: state?.error,
-        onExpand: () => fetchChapter(ch.id),
-        onRetry: () => retryChapter(ch.id),
-        children: (state?.paragraphs ?? []).map<SummaryNodeData>((p) => ({
-          kind: 'branch',
-          heading: 'paragraph',
-          summary: p.summary,
-          children: [{ kind: 'leaf', text: p.fullText }],
-        })),
-      };
-    }),
+    children: book.chapters.map(chapterNode),
   };
 
   return (
-    <OpenRegistryProvider registry={registry}>
-      <ZoomIndicator depth={visibleDepth} />
-
+    <>
       <main className="mx-auto max-w-[64ch] px-6 pb-24 pt-12">
         <div className="mb-10">
           <Link
@@ -171,6 +160,6 @@ export function ReaderClient({
           <SummaryNode node={tree} />
         </article>
       </main>
-    </OpenRegistryProvider>
+    </>
   );
 }

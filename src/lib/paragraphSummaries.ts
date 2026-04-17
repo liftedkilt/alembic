@@ -24,24 +24,37 @@ export async function ensureParagraphSummaries(chapterId: string, provider: LLMP
   }
 
   try {
+    // Paragraphs that already have a summary (trivial ones, pre-filled at ingest)
+    // don't need the LLM. Only send the rest.
+    const needsSummary = chapter.paragraphs.filter((p) => !p.summary);
+
+    if (needsSummary.length === 0) {
+      await prisma.chapter.update({
+        where: { id: chapterId },
+        data: { paragraphSummariesStatus: 'ready' },
+      });
+      return;
+    }
+
     const prompt = paragraphSummariesPrompt({
       title: chapter.title,
-      paragraphs: chapter.paragraphs.map((p) => p.fullText),
+      paragraphs: needsSummary.map((p) => p.fullText),
     });
     const res = await provider.generateStructured(prompt, ResponseSchema);
 
-    const byIndex = new Map(res.summaries.map((s) => [s.index, s.summary]));
-    const missing = chapter.paragraphs
-      .filter((p) => !byIndex.has(p.index) || (byIndex.get(p.index) ?? '').trim().length === 0)
-      .map((p) => p.index);
+    // Response indices are 0..needsSummary.length-1 (local to the request).
+    const byLocalIndex = new Map(res.summaries.map((s) => [s.index, s.summary]));
+    const missing = needsSummary
+      .map((_, i) => i)
+      .filter((i) => !byLocalIndex.has(i) || (byLocalIndex.get(i) ?? '').trim().length === 0);
     if (missing.length > 0) {
-      throw new Error(`LLM returned incomplete paragraph summaries; missing indices: ${missing.slice(0, 5).join(', ')}${missing.length > 5 ? '…' : ''}`);
+      throw new Error(`LLM returned incomplete paragraph summaries; missing ${missing.length}/${needsSummary.length}`);
     }
     await prisma.$transaction(
-      chapter.paragraphs.map((p) =>
+      needsSummary.map((p, i) =>
         prisma.paragraph.update({
           where: { id: p.id },
-          data: { summary: byIndex.get(p.index) ?? null },
+          data: { summary: byLocalIndex.get(i) ?? null },
         }),
       ),
     );

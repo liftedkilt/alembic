@@ -41,8 +41,10 @@ export async function runSummarizeJob(
 
   const book = job.book;
   try {
+    const substantiveChapters = book.chapters.filter((ch) => !ch.isTrivial);
+
     const miniSummaries: string[] = [];
-    for (const ch of book.chapters) {
+    for (const ch of substantiveChapters) {
       const first = ch.paragraphs[0]?.fullText ?? '';
       const last = ch.paragraphs.at(-1)?.fullText ?? first;
       const mini = await withRetry(
@@ -61,8 +63,8 @@ export async function runSummarizeJob(
       max,
     );
 
-    for (let i = 0; i < book.chapters.length; i++) {
-      const ch = book.chapters[i];
+    for (let i = 0; i < substantiveChapters.length; i++) {
+      const ch = substantiveChapters[i];
       if (ch.summary) continue;
       const summary = await withRetry(
         () => provider.generate(chapterSummaryPrompt({ title: ch.title, paragraphs: ch.paragraphs.map((p) => p.fullText) })),

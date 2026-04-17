@@ -29,6 +29,7 @@ model Chapter {
   index                    Int
   title                    String
   summary                  String?
+  isTrivial                Boolean     @default(false)
   paragraphSummariesStatus String      @default("pending")
   paragraphSummariesError  String?
   book                     Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
