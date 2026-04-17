@@ -3,7 +3,11 @@ import { z } from 'zod';
 import { LLMProvider, GenerateOpts } from './provider';
 
 export class AiSdkProvider implements LLMProvider {
-  constructor(public readonly name: string, private model: any) {}
+  constructor(
+    public readonly name: string,
+    private model: any,
+    private providerOptions?: any,
+  ) {}
 
   async generate(prompt: string, opts?: GenerateOpts): Promise<string> {
     const { text } = await generateText({
@@ -11,6 +15,7 @@ export class AiSdkProvider implements LLMProvider {
       prompt,
       maxOutputTokens: opts?.maxTokens,
       temperature: opts?.temperature,
+      providerOptions: this.providerOptions,
     });
     return text.trim();
   }
@@ -22,6 +27,7 @@ export class AiSdkProvider implements LLMProvider {
       schema: schema as any,
       maxOutputTokens: opts?.maxTokens,
       temperature: opts?.temperature,
+      providerOptions: this.providerOptions,
     });
     return object as T;
   }

@@ -7,6 +7,7 @@ type BookCardProps = {
   title: string;
   author: string | null;
   status: string;
+  hasCover?: boolean;
 };
 
 const statusLabel: Record<string, string> = {
@@ -18,7 +19,7 @@ const statusLabel: Record<string, string> = {
   partial: 'Partial',
 };
 
-export function BookCard({ id, title, author, status }: BookCardProps) {
+export function BookCard({ id, title, author, status, hasCover }: BookCardProps) {
   return (
     <div className="relative">
       <div className="absolute top-3 right-3 z-10"><BookCardMenu id={id} /></div>
@@ -26,8 +27,17 @@ export function BookCard({ id, title, author, status }: BookCardProps) {
         href={`/books/${id}`}
         className="group block rounded-lg border border-border bg-card p-5 transition hover:border-primary/60 hover:shadow-sm"
       >
-        <div className="aspect-[2/3] w-full rounded-md bg-gradient-to-br from-accent to-muted mb-4 flex items-center justify-center">
-          <span className="font-serif text-3xl text-primary/70 px-4 text-center line-clamp-5">{title}</span>
+        <div className="aspect-[2/3] w-full rounded-md overflow-hidden bg-gradient-to-br from-accent to-muted mb-4 flex items-center justify-center">
+          {hasCover ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={`/api/books/${id}/cover`}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <span className="font-serif text-3xl text-primary/70 px-4 text-center line-clamp-5">{title}</span>
+          )}
         </div>
         <div className="font-serif text-lg leading-tight line-clamp-2">{title}</div>
         {author && <div className="text-sm text-muted-foreground mt-1">{author}</div>}

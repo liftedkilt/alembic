@@ -2,6 +2,7 @@ import './globals.css';
 import type { ReactNode } from 'react';
 import type { Metadata, Viewport } from 'next';
 import { RegisterSW } from './register-sw';
+import { ThemeInitScript } from '@/components/ThemeInitScript';
 
 export const metadata: Metadata = {
   title: 'Alembic',
@@ -15,7 +16,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <ThemeInitScript />
+      </head>
       <body>
         <RegisterSW />
         {children}

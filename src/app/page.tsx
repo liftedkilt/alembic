@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { UploadDropzone } from '@/components/UploadDropzone';
 import { BookCard } from '@/components/BookCard';
+import { ReadingPreferences } from '@/components/ReadingPreferences';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,7 +15,10 @@ export default async function LibraryPage() {
           <h1 className="font-serif text-4xl text-primary">Alembic</h1>
           <p className="text-muted-foreground mt-1">Your library, distilled.</p>
         </div>
-        <a href="/settings" className="text-sm text-muted-foreground hover:text-primary">Settings →</a>
+        <div className="flex items-center gap-3">
+          <ReadingPreferences />
+          <a href="/settings" className="text-sm text-muted-foreground hover:text-primary">Settings →</a>
+        </div>
       </header>
 
       <section className="mb-10">
@@ -27,7 +31,14 @@ export default async function LibraryPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {books.map((b) => (
-              <BookCard key={b.id} id={b.id} title={b.title} author={b.author} status={b.status} />
+              <BookCard
+                key={b.id}
+                id={b.id}
+                title={b.title}
+                author={b.author}
+                status={b.status}
+                hasCover={Boolean(b.coverPath)}
+              />
             ))}
           </div>
         )}

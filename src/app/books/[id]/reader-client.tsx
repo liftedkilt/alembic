@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { AnimatePresence, LayoutGroup, motion } from 'framer-motion';
+import { ReadingPreferences } from '@/components/ReadingPreferences';
 import { RetryBanner } from '@/components/RetryBanner';
 import { RichText } from '@/components/RichText';
 import { stripInlineMarkdown } from '@/lib/text';
@@ -281,13 +282,14 @@ export function ReaderClient({
 
   return (
     <main className="mx-auto max-w-[64ch] px-6 pb-24 pt-12">
-      <div className="mb-10">
+      <div className="mb-10 flex items-center justify-between">
         <Link
           href="/"
           className="text-xs font-sans uppercase tracking-[0.22em] text-muted-foreground hover:text-primary transition-colors"
         >
           ← Library
         </Link>
+        <ReadingPreferences />
       </div>
 
       <header className="mb-12 text-center">
@@ -313,7 +315,7 @@ export function ReaderClient({
         )}
       </header>
 
-      <article className="space-y-4">
+      <article className="reader-prose space-y-4">
         <LayoutGroup>
           <AnimatePresence initial={false} mode="popLayout">
             {hydratedItems.map((item) => (
@@ -326,13 +328,16 @@ export function ReaderClient({
   );
 }
 
+const REFLOW_EASE = [0.32, 0.72, 0, 1] as [number, number, number, number];
+const REFLOW_DURATION = 0.3;
+
 function FlatItemView({ item }: { item: FlatItem }) {
   const base = {
     layout: true as const,
-    initial: { opacity: 0 },
-    animate: { opacity: 1 },
-    exit: { opacity: 0 },
-    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
+    initial: { opacity: 0, y: 6 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -4 },
+    transition: { duration: REFLOW_DURATION, ease: REFLOW_EASE },
   };
 
   if (item.kind === 'summary') {
