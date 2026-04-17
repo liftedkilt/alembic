@@ -40,4 +40,21 @@ describe('ensureParagraphSummaries', () => {
     await ensureParagraphSummaries(chapter.id, provider);
     expect(provider.calls.length).toBe(1); // second call is a no-op when status=ready
   });
+
+  it('marks failed when LLM returns fewer entries than paragraphs', async () => {
+    const { bookId } = await ingestUpload({ filename: 'sample.epub', bytes: fixture });
+    const chapter = await prisma.chapter.findFirstOrThrow({
+      where: { bookId },
+      include: { paragraphs: { orderBy: { index: 'asc' } } },
+    });
+
+    const provider = new FakeLLMProvider({
+      structured: () => ({ summaries: [{ index: 0, summary: 'only first' }] }), // intentionally short
+    });
+
+    await expect(ensureParagraphSummaries(chapter.id, provider)).rejects.toThrow(/incomplete/);
+    const reloaded = await prisma.chapter.findUniqueOrThrow({ where: { id: chapter.id } });
+    expect(reloaded.paragraphSummariesStatus).toBe('failed');
+    expect(reloaded.paragraphSummariesError).toMatch(/incomplete/);
+  });
 });

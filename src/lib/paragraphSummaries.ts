@@ -27,6 +27,12 @@ export async function ensureParagraphSummaries(chapterId: string, provider: LLMP
     const res = await provider.generateStructured(prompt, ResponseSchema);
 
     const byIndex = new Map(res.summaries.map((s) => [s.index, s.summary]));
+    const missing = chapter.paragraphs
+      .filter((p) => !byIndex.has(p.index) || (byIndex.get(p.index) ?? '').trim().length === 0)
+      .map((p) => p.index);
+    if (missing.length > 0) {
+      throw new Error(`LLM returned incomplete paragraph summaries; missing indices: ${missing.slice(0, 5).join(', ')}${missing.length > 5 ? '…' : ''}`);
+    }
     await prisma.$transaction(
       chapter.paragraphs.map((p) =>
         prisma.paragraph.update({

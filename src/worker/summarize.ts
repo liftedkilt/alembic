@@ -25,10 +25,18 @@ export async function runSummarizeJob(
   opts: { maxAttempts?: number } = {},
 ): Promise<void> {
   const max = opts.maxAttempts ?? DEFAULT_MAX_ATTEMPTS;
-  const job = await prisma.job.update({
+  const job = await prisma.job.findUniqueOrThrow({
     where: { id: jobId },
-    data: { status: 'running', startedAt: new Date(), attempts: { increment: 1 } },
-    include: { book: { include: { chapters: { include: { paragraphs: true }, orderBy: { index: 'asc' } } } } },
+    include: {
+      book: {
+        include: {
+          chapters: {
+            include: { paragraphs: { orderBy: { index: 'asc' } } },
+            orderBy: { index: 'asc' },
+          },
+        },
+      },
+    },
   });
 
   const book = job.book;
@@ -55,6 +63,7 @@ export async function runSummarizeJob(
 
     for (let i = 0; i < book.chapters.length; i++) {
       const ch = book.chapters[i];
+      if (ch.summary) continue;
       const summary = await withRetry(
         () => provider.generate(chapterSummaryPrompt({ title: ch.title, paragraphs: ch.paragraphs.map((p) => p.fullText) })),
         max,

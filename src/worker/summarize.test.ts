@@ -52,4 +52,29 @@ describe('runSummarizeJob', () => {
     const book = await prisma.book.findUniqueOrThrow({ where: { id: bookId } });
     expect(['failed', 'partial']).toContain(book.status);
   });
+
+  it('succeeds on retry after a single transient failure', async () => {
+    const { bookId } = await ingestUpload({ filename: 'sample.epub', bytes: fixture });
+    const job = await prisma.job.findFirstOrThrow({ where: { bookId } });
+
+    let mini = 0;
+    const provider = new FakeLLMProvider({
+      text: (prompt) => {
+        if (prompt.includes('ONE paragraph')) return 'THE_BOOK_SUMMARY';
+        if (prompt.includes('Summary:') && prompt.includes('Opening:')) {
+          // chapterMiniSummaryPrompt: fail the very first call, then succeed
+          mini++;
+          if (mini === 1) throw new Error('transient');
+          return 'mini ok';
+        }
+        return 'a chapter summary sentence here.';
+      },
+    });
+
+    await runSummarizeJob(job.id, provider, { maxAttempts: 2 });
+
+    const book = await prisma.book.findUniqueOrThrow({ where: { id: bookId } });
+    expect(book.status).toBe('ready');
+    expect(mini).toBeGreaterThanOrEqual(2); // proves a retry happened
+  }, 30_000);
 });

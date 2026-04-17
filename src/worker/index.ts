@@ -9,7 +9,10 @@ async function claimNextJob() {
   return prisma.$transaction(async (tx) => {
     const next = await tx.job.findFirst({ where: { status: 'queued' }, orderBy: { createdAt: 'asc' } });
     if (!next) return null;
-    return tx.job.update({ where: { id: next.id }, data: { status: 'running' } });
+    return tx.job.update({
+      where: { id: next.id },
+      data: { status: 'running', startedAt: new Date(), attempts: { increment: 1 } },
+    });
   });
 }
 
