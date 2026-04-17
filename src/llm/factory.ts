@@ -13,7 +13,7 @@ import { AiSdkProvider } from './ai-sdk';
 // chapter summary doesn't spend 30s on internal deliberation.
 const LOW_REASONING_PROVIDER_OPTIONS = {
   google: { thinkingConfig: { thinkingBudget: 0, includeThoughts: false } },
-  openai: { reasoningEffort: 'minimal' },
+  openai: { reasoningEffort: 'none' },
   anthropic: {},
 };
 
