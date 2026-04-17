@@ -1,0 +1,14 @@
+node_modules
+.next
+out
+storage
+.env
+.env.local
+prisma/dev.db*
+*.log
+coverage
+test-results
+playwright-report
+prisma/test.db*
+test/.tmp-storage
+*.tsbuildinfo

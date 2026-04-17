@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Book {
+  id          String   @id @default(cuid())
+  title       String
+  author      String?
+  format      String
+  filePath    String
+  coverPath   String?
+  status      String   @default("uploaded")
+  statusError String?
+  bookSummary String?
+  uploadedAt  DateTime @default(now())
+  chapters    Chapter[]
+  jobs        Job[]
+  @@index([uploadedAt])
+}
+
+model Chapter {
+  id                       String      @id @default(cuid())
+  bookId                   String
+  index                    Int
+  title                    String
+  summary                  String?
+  paragraphSummariesStatus String      @default("pending")
+  paragraphSummariesError  String?
+  book                     Book        @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  paragraphs               Paragraph[]
+  @@index([bookId, index])
+}
+
+model Paragraph {
+  id        String  @id @default(cuid())
+  chapterId String
+  index     Int
+  fullText  String
+  summary   String?
+  chapter   Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  @@index([chapterId, index])
+}
+
+model Job {
+  id         String    @id @default(cuid())
+  bookId     String
+  type       String
+  status     String    @default("queued")
+  attempts   Int       @default(0)
+  error      String?
+  createdAt  DateTime  @default(now())
+  startedAt  DateTime?
+  finishedAt DateTime?
+  book       Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  @@index([status, createdAt])
+}
+
+model Settings {
+  id          Int     @id @default(1)
+  llmProvider String  @default("openai")
+  llmModel    String  @default("gpt-4o-mini")
+  apiKeys     String  @default("{}")
+  baseUrl     String?
+}
