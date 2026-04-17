@@ -48,8 +48,17 @@ export function SummaryNode({ node, depth = 0 }: Props) {
     >
       <button
         onClick={handleToggle}
+        onKeyDown={(e) => {
+          if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (!open) handleToggle();
+          } else if (e.key === 'ArrowLeft' || e.key === 'Escape') {
+            e.preventDefault();
+            if (open) handleToggle();
+          }
+        }}
         className={cn(
-          'group w-full text-left py-3 px-1 transition-colors hover:text-primary flex items-start gap-2',
+          'group w-full text-left py-3 px-1 transition-colors hover:text-primary flex items-start gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md',
           open && 'text-primary',
         )}
       >
