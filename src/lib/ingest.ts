@@ -1,4 +1,4 @@
-import { writeFile, mkdir } from 'node:fs/promises';
+import { writeFile, mkdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { prisma } from './db';
 import { storagePath } from './storage';
@@ -10,27 +10,22 @@ export async function ingestUpload(input: { filename: string; bytes: Buffer }): 
 
   const parsed = await parser.parse(input.bytes);
 
-  return prisma.$transaction(async (tx) => {
+  // 1. DB work in a single transaction. Filesystem paths are computed up front
+  //    but not yet written; if the transaction rolls back, nothing is on disk.
+  const bookId = await prisma.$transaction(async (tx) => {
     const book = await tx.book.create({
       data: {
         title: parsed.title,
         author: parsed.author,
         format: parser.format,
-        filePath: '', // set after write
+        filePath: '',
         status: 'summarizing',
       },
     });
 
     const dir = storagePath('books', book.id);
-    await mkdir(dir, { recursive: true });
     const filePath = path.join(dir, `source.${parser.format}`);
-    await writeFile(filePath, input.bytes);
-
-    let coverPath: string | undefined;
-    if (parsed.coverBytes) {
-      coverPath = path.join(dir, 'cover.bin');
-      await writeFile(coverPath, parsed.coverBytes);
-    }
+    const coverPath = parsed.coverBytes ? path.join(dir, 'cover.bin') : null;
 
     for (let ci = 0; ci < parsed.chapters.length; ci++) {
       const ch = parsed.chapters[ci];
@@ -47,10 +42,26 @@ export async function ingestUpload(input: { filename: string; bytes: Buffer }): 
     }
 
     await tx.book.update({ where: { id: book.id }, data: { filePath, coverPath } });
-    await tx.job.create({
-      data: { bookId: book.id, type: 'summarize-book-and-chapters', status: 'queued' },
-    });
+    await tx.job.create({ data: { bookId: book.id, type: 'summarize-book-and-chapters', status: 'queued' } });
 
-    return { bookId: book.id };
+    return book.id;
   });
+
+  // 2. Persist files outside the transaction. If this fails, compensate by
+  //    deleting the book row (cascades to chapters/paragraphs/jobs).
+  try {
+    const dir = storagePath('books', bookId);
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, `source.${parser.format}`), input.bytes);
+    if (parsed.coverBytes) {
+      await writeFile(path.join(dir, 'cover.bin'), parsed.coverBytes);
+    }
+  } catch (e) {
+    await prisma.book.delete({ where: { id: bookId } }).catch(() => {});
+    const dir = storagePath('books', bookId);
+    await rm(dir, { recursive: true, force: true }).catch(() => {});
+    throw e;
+  }
+
+  return { bookId };
 }

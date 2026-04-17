@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-export const STORAGE_ROOT = path.resolve(process.cwd(), 'storage');
+export const STORAGE_ROOT = path.resolve(process.env.STORAGE_ROOT || path.resolve(process.cwd(), 'storage'));
 
 export function storagePath(...parts: string[]): string {
   for (const p of parts) if (p.includes('\0')) throw new Error('null byte in path');

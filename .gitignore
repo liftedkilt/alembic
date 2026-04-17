@@ -9,3 +9,5 @@ prisma/dev.db*
 coverage
 test-results
 playwright-report
+prisma/test.db*
+test/.tmp-storage

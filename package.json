@@ -20,6 +20,7 @@
     "@prisma/client": "^6.19.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^17.4.2",
     "epub2": "^3.0.2",
     "lucide-react": "^1.8.0",
     "mobi": "^0.0.1",

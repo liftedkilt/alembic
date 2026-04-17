@@ -29,10 +29,19 @@ describe('ingestUpload', () => {
     expect(book.jobs[0].status).toBe('queued');
   });
 
-  it('marks book failed if parsing throws', async () => {
+  it('throws and persists nothing when file format is unsupported', async () => {
     const bad = Buffer.from('not a real book file, just gibberish text blob');
     await expect(ingestUpload({ filename: 'x.txt', bytes: bad })).rejects.toThrow();
     const books = await prisma.book.findMany();
-    expect(books).toHaveLength(0); // ingestion should roll back — nothing persisted on parse failure
+    expect(books).toHaveLength(0);
+  });
+
+  it('throws and persists nothing when the chosen parser fails mid-parse', async () => {
+    // Minimal ZIP magic header so EpubParser.canParse is true, but invalid EPUB
+    // internals so parse() throws after the registry selects it.
+    const bogusEpub = Buffer.concat([Buffer.from([0x50, 0x4b, 0x03, 0x04]), Buffer.from('not a real epub')]);
+    await expect(ingestUpload({ filename: 'x.epub', bytes: bogusEpub })).rejects.toThrow();
+    const books = await prisma.book.findMany();
+    expect(books).toHaveLength(0);
   });
 });
