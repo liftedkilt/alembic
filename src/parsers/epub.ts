@@ -1,9 +1,15 @@
 import path from 'node:path';
 import EPub from 'epub2';
+import sanitizeHtml from 'sanitize-html';
 import { ParsedBook, ParsedImage, Parser, ParserError } from './types';
 import { splitParagraphs } from './splitParagraphs';
 
 const IMAGE_EXT_RE = /\.(png|jpe?g|gif|webp|svg)$/i;
+
+// Inline formatting we keep when storing paragraph text. Structural tags
+// (p, div, h*, li, blockquote, br) are converted to paragraph breaks before
+// sanitize-html runs.
+const INLINE_HTML_WHITELIST = ['em', 'strong', 'i', 'b', 'small', 'sub', 'sup', 'cite', 'q', 'mark', 'u'] as const;
 
 export class EpubParser implements Parser {
   format = 'epub' as const;
@@ -149,14 +155,20 @@ function guessExt(src: string): string | null {
 }
 
 function stripHtml(html: string): string {
-  return html
-    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '')
-    .replace(/<\/(p|div|h[1-6]|li|br)>/gi, '\n\n')
-    .replace(/<br\s*\/?>/gi, '\n\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)));
+  // 1. Drop scripts/styles wholesale.
+  let out = html.replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, '');
+  // 2. Convert structural block boundaries to paragraph separators.
+  out = out.replace(/<\/(p|div|h[1-6]|li|blockquote)>/gi, '\n\n');
+  out = out.replace(/<(blockquote|hr)\b[^>]*>/gi, '\n\n');
+  out = out.replace(/<br\s*\/?>/gi, '\n\n');
+  // 3. Sanitize to the inline whitelist. sanitize-html also decodes entities.
+  out = sanitizeHtml(out, {
+    allowedTags: [...INLINE_HTML_WHITELIST],
+    allowedAttributes: {},
+    allowedSchemes: [],
+    disallowedTagsMode: 'discard',
+  });
+  // 4. Collapse NBSPs that survived entity decoding.
+  out = out.replace(/\u00a0/g, ' ');
+  return out;
 }

@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { stripInlineMarkdown } from '@/lib/text';
+import { RichText } from './RichText';
 
 export interface LeafText {
   kind: 'leaf';
@@ -64,11 +65,11 @@ export function SummaryNode({ node, depth = 0, initiallyOpen = false }: Props) {
       <motion.div layout="position">
         <motion.div
           layout="position"
-          className="mt-12 mb-5 text-center text-[0.7rem] font-sans uppercase tracking-[0.28em] text-muted-foreground"
+          className="mt-8 mb-3 text-center text-[0.65rem] font-sans uppercase tracking-[0.32em] text-muted-foreground/70"
         >
           {node.label}
         </motion.div>
-        <div className="space-y-5">
+        <div className="space-y-4">
           {node.children.map((child, i) => (
             <SummaryNode key={i} node={child} depth={depth + 1} />
           ))}
@@ -96,7 +97,7 @@ export function SummaryNode({ node, depth = 0, initiallyOpen = false }: Props) {
       {isChapter && node.label && (
         <motion.div
           layout="position"
-          className="mt-12 mb-5 text-center text-[0.7rem] font-sans uppercase tracking-[0.28em] text-muted-foreground"
+          className="mt-8 mb-3 text-center text-[0.65rem] font-sans uppercase tracking-[0.32em] text-muted-foreground/70"
         >
           {node.label}
         </motion.div>
@@ -136,10 +137,10 @@ export function SummaryNode({ node, depth = 0, initiallyOpen = false }: Props) {
           >
             <div
               className={cn(
-                'space-y-5',
-                isBook && 'mt-6',
-                isChapter && 'mt-5',
-                isParagraph && 'mt-4',
+                'space-y-4',
+                isBook && 'mt-4',
+                isChapter && 'mt-3',
+                isParagraph && 'mt-3',
               )}
             >
               {node.loading && (
@@ -185,17 +186,5 @@ export function SummaryNode({ node, depth = 0, initiallyOpen = false }: Props) {
 }
 
 function LeafContent({ text }: { text: string }) {
-  const match = text.trim().match(/^\[\[IMG:(.+?)(?:\|(.*))?\]\]$/);
-  if (match) {
-    const src = match[1];
-    const alt = match[2] ?? '';
-    return (
-      <figure className="my-2">
-        { }
-        <img src={src} alt={alt} className="mx-auto max-w-full rounded-sm" />
-        {alt && <figcaption className="mt-2 text-center text-xs font-sans text-muted-foreground">{alt}</figcaption>}
-      </figure>
-    );
-  }
-  return <p className="font-serif text-[1.05rem] leading-[1.75] text-foreground">{text}</p>;
+  return <RichText text={text} />;
 }
