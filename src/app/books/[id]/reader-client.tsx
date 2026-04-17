@@ -53,14 +53,14 @@ type Node = Branch | Leaf | Section;
 
 type FlatItem =
   | { kind: 'summary'; id: string; depth: number; heading?: 'book' | 'chapter' | 'paragraph'; text: string; onToggle: () => void }
-  | { kind: 'full'; id: string; depth: number; text: string }
+  | { kind: 'full'; id: string; depth: number; text: string; collapseBranchId?: string; onCollapse?: () => void }
   | { kind: 'label'; id: string; depth: number; text: string; onToggle?: () => void }
   | { kind: 'loading'; id: string; depth: number }
   | { kind: 'error'; id: string; depth: number; message: string; onRetry?: () => void };
 
-function flatten(node: Node, expanded: Set<string>, out: FlatItem[]): void {
+function flatten(node: Node, expanded: Set<string>, out: FlatItem[], collapseBranchId?: string): void {
   if (node.kind === 'leaf') {
-    out.push({ kind: 'full', id: node.id, depth: node.depth, text: node.text });
+    out.push({ kind: 'full', id: node.id, depth: node.depth, text: node.text, collapseBranchId });
     return;
   }
 
@@ -112,7 +112,12 @@ function flatten(node: Node, expanded: Set<string>, out: FlatItem[]): void {
     });
     return;
   }
-  for (const c of node.children) flatten(c, expanded, out);
+  // Paragraph branches only have one kind of child: a leaf carrying the full
+  // text. Propagate the branch id so each of those leaves becomes click-to-
+  // collapse. Chapters and the book node don't propagate — their children are
+  // already individually collapsible.
+  const propagate = node.heading === 'paragraph' ? node.id : undefined;
+  for (const c of node.children) flatten(c, expanded, out, propagate);
 }
 
 export function ReaderClient({
@@ -275,6 +280,10 @@ export function ReaderClient({
       const t = togglesByNodeId[branchId];
       if (t) return { ...it, onToggle: t };
     }
+    if (it.kind === 'full' && it.collapseBranchId) {
+      const t = togglesByNodeId[it.collapseBranchId];
+      if (t) return { ...it, onCollapse: t };
+    }
     return it;
   });
 
@@ -366,8 +375,24 @@ function FlatItemView({ item }: { item: FlatItem }) {
   }
 
   if (item.kind === 'full') {
+    const onCollapse = item.onCollapse;
+    const collapsible = Boolean(onCollapse);
+    const handleClick = () => {
+      if (!collapsible) return;
+      // Don't collapse mid-selection — user is trying to highlight text.
+      if (typeof window !== 'undefined') {
+        const sel = window.getSelection();
+        if (sel && sel.toString().trim().length > 0) return;
+      }
+      onCollapse?.();
+    };
     return (
-      <motion.div {...base}>
+      <motion.div
+        {...base}
+        onClick={handleClick}
+        className={cn(collapsible && 'cursor-pointer group')}
+        title={collapsible ? 'Click to collapse back to summary' : undefined}
+      >
         <RichText text={item.text} />
       </motion.div>
     );
