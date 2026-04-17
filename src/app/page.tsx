@@ -14,6 +14,7 @@ export default async function LibraryPage() {
           <h1 className="font-serif text-4xl text-primary">Alembic</h1>
           <p className="text-muted-foreground mt-1">Your library, distilled.</p>
         </div>
+        <a href="/settings" className="text-sm text-muted-foreground hover:text-primary">Settings →</a>
       </header>
 
       <section className="mb-10">
