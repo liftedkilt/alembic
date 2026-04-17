@@ -10,5 +10,7 @@ ${body}
 
 ---
 
+Format: plain prose only. No Markdown (no asterisks, underscores, backticks, bullets, or headings).
+
 Summary:`;
 }

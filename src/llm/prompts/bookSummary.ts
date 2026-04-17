@@ -8,7 +8,9 @@ Here are brief summaries of each chapter, in order:
 
 ${input.chapterMiniSummaries.map((s, i) => `Chapter ${i + 1}: ${s}`).join('\n')}
 
-Write ONE paragraph (4-6 sentences) that captures what this book is about: its subject, its arc, its voice. No preamble, no "this book". Just the paragraph.`;
+Write ONE paragraph (4-6 sentences) that captures what this book is about: its subject, its arc, its voice. No preamble, no "this book". Just the paragraph.
+
+Format: plain prose only. Do not use Markdown — no asterisks, underscores, backticks, bullets, headings, or bold/italic markers. Use straight punctuation.`;
 }
 
 export function chapterMiniSummaryPrompt(input: { title: string; firstParagraph: string; lastParagraph: string }): string {
@@ -19,6 +21,8 @@ Title: ${input.title}
 Opening: ${input.firstParagraph}
 
 Closing: ${input.lastParagraph}
+
+Format: plain prose only. No Markdown (no asterisks, underscores, backticks, or bullets).
 
 Summary:`;
 }

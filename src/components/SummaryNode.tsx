@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { stripInlineMarkdown } from '@/lib/text';
 
 export interface LeafText {
   kind: 'leaf';
@@ -118,7 +119,9 @@ export function SummaryNode({ node, depth = 0, initiallyOpen = false }: Props) {
         className={summaryClasses}
         aria-expanded={open}
       >
-        {node.summary ?? (
+        {node.summary ? (
+          stripInlineMarkdown(node.summary)
+        ) : (
           <span className="text-muted-foreground italic">Not summarized yet</span>
         )}
       </motion.button>
