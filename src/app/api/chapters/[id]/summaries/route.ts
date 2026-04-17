@@ -11,8 +11,10 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     const provider = await buildProviderFromSettings();
     await ensureParagraphSummaries(id, provider);
     const ch = await getChapterWithParagraphs(id);
+    if (!ch) return NextResponse.json({ error: 'not found' }, { status: 404 });
     return NextResponse.json({
-      paragraphs: ch!.paragraphs.map((p) => ({ id: p.id, index: p.index, summary: p.summary })),
+      status: ch.paragraphSummariesStatus,
+      paragraphs: ch.paragraphs.map((p) => ({ id: p.id, index: p.index, summary: p.summary, fullText: p.fullText })),
     });
   } catch (e) {
     return NextResponse.json({ error: e instanceof Error ? e.message : 'failed' }, { status: 500 });

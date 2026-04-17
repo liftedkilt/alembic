@@ -17,22 +17,26 @@ export function ReaderClient({
   const [chapterState, setChapterState] = useState<Record<string, { loading: boolean; error: string | null; paragraphs?: ApiParagraphs['paragraphs'] }>>({});
 
   const fetchChapter = useCallback(async (chId: string) => {
-    if (chapterState[chId]?.paragraphs) return;
-    setChapterState((s) => ({ ...s, [chId]: { loading: true, error: null } }));
+    let alreadyFetching = false;
+    setChapterState((s) => {
+      if (s[chId]?.paragraphs || s[chId]?.loading) { alreadyFetching = true; return s; }
+      return { ...s, [chId]: { loading: true, error: null } };
+    });
+    if (alreadyFetching) return;
+
     try {
       const head = await fetch(`/api/chapters/${chId}/summaries`, { method: 'GET' });
       let data: ApiParagraphs = await head.json();
       if (data.status !== 'ready') {
         const gen = await fetch(`/api/chapters/${chId}/summaries`, { method: 'POST' });
         if (!gen.ok) throw new Error((await gen.json()).error ?? 'Failed to generate summaries');
-        const refresh = await fetch(`/api/chapters/${chId}/summaries`, { method: 'GET' });
-        data = await refresh.json();
+        data = await gen.json();
       }
       setChapterState((s) => ({ ...s, [chId]: { loading: false, error: null, paragraphs: data.paragraphs } }));
     } catch (e) {
       setChapterState((s) => ({ ...s, [chId]: { loading: false, error: e instanceof Error ? e.message : 'failed' } }));
     }
-  }, [chapterState]);
+  }, []);
 
   const tree: SummaryNodeData = {
     kind: 'branch',

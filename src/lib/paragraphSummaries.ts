@@ -14,10 +14,14 @@ export async function ensureParagraphSummaries(chapterId: string, provider: LLMP
   });
   if (chapter.paragraphSummariesStatus === 'ready') return;
 
-  await prisma.chapter.update({
-    where: { id: chapterId },
+  const claimed = await prisma.chapter.updateMany({
+    where: { id: chapterId, paragraphSummariesStatus: { notIn: ['generating', 'ready'] } },
     data: { paragraphSummariesStatus: 'generating', paragraphSummariesError: null },
   });
+  if (claimed.count === 0) {
+    // Another caller is already generating (or just finished). Don't duplicate work.
+    return;
+  }
 
   try {
     const prompt = paragraphSummariesPrompt({

@@ -8,6 +8,9 @@ import { LLMProvider } from './provider';
 import { AiSdkProvider } from './ai-sdk';
 
 export async function buildProviderFromSettings(): Promise<LLMProvider> {
+  // E2E escape hatch: never leaves a fingerprint in the Settings row, never makes
+  // a network call. Deliberately returns empty structured output so paragraph-
+  // summary generation fails — E2E tests cover the book + chapter path only.
   if (process.env.ALEMBIC_FAKE_LLM === '1') {
     const { FakeLLMProvider } = await import('./fake');
     return new FakeLLMProvider({

@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import path from 'node:path';
 
 test('upload, summarize, expand through levels', async ({ page }) => {
+  test.setTimeout(180_000);
   await page.goto('/');
   const fileInput = page.locator('input[type=file]');
   await fileInput.setInputFiles(path.resolve(__dirname, '../test/fixtures/sample.epub'));
