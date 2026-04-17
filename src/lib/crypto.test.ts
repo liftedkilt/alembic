@@ -24,4 +24,11 @@ describe('crypto', () => {
     const tampered = c.slice(0, -2) + (c.endsWith('a') ? 'b' : 'a');
     expect(() => decrypt(tampered)).toThrow();
   });
+
+  it('rejects a non-hex key', () => {
+    const prev = process.env.APP_ENCRYPTION_KEY;
+    process.env.APP_ENCRYPTION_KEY = 'z'.repeat(64);
+    expect(() => encrypt('anything')).toThrow(/hex/);
+    process.env.APP_ENCRYPTION_KEY = prev;
+  });
 });

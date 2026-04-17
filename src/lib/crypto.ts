@@ -4,8 +4,8 @@ const ALGO = 'aes-256-gcm';
 
 function getKey(): Buffer {
   const hex = process.env.APP_ENCRYPTION_KEY;
-  if (!hex || hex.length !== 64) {
-    throw new Error('APP_ENCRYPTION_KEY must be set to a 64-char hex string (32 bytes)');
+  if (!hex || !/^[0-9a-fA-F]{64}$/.test(hex)) {
+    throw new Error('APP_ENCRYPTION_KEY must be a 64-char hex string (32 bytes)');
   }
   return Buffer.from(hex, 'hex');
 }

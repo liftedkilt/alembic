@@ -58,6 +58,9 @@ CREATE TABLE "Settings" (
 );
 
 -- CreateIndex
+CREATE INDEX "Book_uploadedAt_idx" ON "Book"("uploadedAt");
+
+-- CreateIndex
 CREATE INDEX "Chapter_bookId_index_idx" ON "Chapter"("bookId", "index");
 
 -- CreateIndex

@@ -20,6 +20,7 @@ model Book {
   uploadedAt  DateTime @default(now())
   chapters    Chapter[]
   jobs        Job[]
+  @@index([uploadedAt])
 }
 
 model Chapter {
