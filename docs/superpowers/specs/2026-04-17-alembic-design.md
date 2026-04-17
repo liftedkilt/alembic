@@ -1,11 +1,11 @@
-# Reader — Design Spec
+# Alembic — Design Spec
 
 **Date:** 2026-04-17
 **Status:** Approved (pending user spec review)
 
 ## 1. Purpose
 
-Reader is a web app for uploading e-books (EPUB, PDF, MOBI) and reading them through an LLM-generated hierarchical summary. Opening a book shows a single-paragraph summary of the whole work. Clicking any summary expands it into the next level down — chapter summaries, then paragraph summaries, then the original text. The goal is to let the reader move fluidly between a 10-second overview and the full prose, controlling the level of detail per-section.
+Alembic is a web app for uploading e-books (EPUB, PDF, MOBI) and reading them through an LLM-generated hierarchical summary. The name refers to the classical distillation apparatus: the app distills a book into layered essences, letting the reader control how concentrated their view is at any point. Opening a book shows a single-paragraph summary of the whole work. Clicking any summary expands it into the next level down — chapter summaries, then paragraph summaries, then the original text. The goal is to let the reader move fluidly between a 10-second overview and the full prose, controlling the level of detail per-section.
 
 ## 2. Scope
 
