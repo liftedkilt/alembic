@@ -8,6 +8,14 @@ import { LLMProvider } from './provider';
 import { AiSdkProvider } from './ai-sdk';
 
 export async function buildProviderFromSettings(): Promise<LLMProvider> {
+  if (process.env.ALEMBIC_FAKE_LLM === '1') {
+    const { FakeLLMProvider } = await import('./fake');
+    return new FakeLLMProvider({
+      text: (p) => (p.includes('ONE paragraph') ? 'A distilled overview of this book.' : 'A short chapter summary.'),
+      structured: () => ({ summaries: [] }),
+    });
+  }
+
   const settings = await prisma.settings.upsert({
     where: { id: 1 },
     update: {},
